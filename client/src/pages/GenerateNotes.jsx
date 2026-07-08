@@ -13,7 +13,8 @@ import {
   FiArrowLeft,
   FiFolderPlus,
   FiUploadCloud,
-  FiFileText
+  FiFileText,
+  FiAward
 } from 'react-icons/fi';
 import { HiSparkles } from 'react-icons/hi';
 import { useNotes } from '../context/NotesContext';
