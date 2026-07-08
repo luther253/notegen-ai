@@ -250,14 +250,27 @@ const generateToken = (id) => {
 };
 
 // GET Configuration settings for client
-app.get('/api/config', (req, res) => {
+app.get('/api/config', async (req, res) => {
+  let geminiStatus = 'untested';
+  if (process.env.GEMINI_API_KEY) {
+    try {
+      const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+      await model.generateContent('Say hello');
+      geminiStatus = 'ok';
+    } catch (e) {
+      geminiStatus = `error: ${e.message}`;
+    }
+  }
+
   res.json({
     googleClientId: process.env.GOOGLE_CLIENT_ID || null,
     hasGeminiKey: !!process.env.GEMINI_API_KEY,
     geminiKeyLength: process.env.GEMINI_API_KEY ? process.env.GEMINI_API_KEY.length : 0,
     hasOpenAiKey: !!process.env.OPENAI_API_KEY,
     dbState: mongoose.connection.readyState,
-    hasMongoUri: !!process.env.MONGODB_URI
+    hasMongoUri: !!process.env.MONGODB_URI,
+    geminiStatus
   });
 });
 
