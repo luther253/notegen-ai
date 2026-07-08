@@ -677,24 +677,17 @@ export default function GenerateNotes() {
                   ))}
                 </div>
 
-                {/* Simulated Checkout Button */}
+                {/* Real Checkout Button Placeholder */}
                 <button
-                  disabled={isUpgrading}
-                  onClick={async () => {
-                    setIsUpgrading(true);
-                    const success = await upgradeUser();
-                    setIsUpgrading(false);
-                    if (success) {
-                      setShowUpgradeModal(false);
-                      triggerToast('Upgrade Successful! You are now a Premium user 👑', 'success');
-                    } else {
-                      triggerToast('Upgrade simulation failed, please try again.', 'error');
-                    }
-                  }}
-                  className="w-full py-4 text-xs font-bold text-slate-950 bg-gradient-to-r from-amber-400 via-amber-300 to-yellow-400 hover:from-amber-500 hover:to-yellow-500 rounded-xl transition-all shadow-lg hover:scale-101 cursor-pointer flex items-center justify-center gap-2"
+                  disabled={true}
+                  className="w-full py-4 text-xs font-bold text-slate-950 bg-gradient-to-r from-amber-400 via-amber-300 to-yellow-400 opacity-75 rounded-xl cursor-not-allowed flex items-center justify-center gap-2"
                 >
-                  {isUpgrading ? 'Processing Stripe Checkout...' : 'Simulate Stripe Checkout ($9.99/mo) 💳'}
+                  Pay with Stripe ($9.99/mo) - Coming Soon
                 </button>
+
+                <p className="text-[10px] text-gray-400 mt-2">
+                  (Admin: You need to provide your real Stripe API keys to fully activate this payment gateway!)
+                </p>
 
                 <button
                   onClick={() => setShowUpgradeModal(false)}
