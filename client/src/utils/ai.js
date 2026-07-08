@@ -58,9 +58,13 @@ export const generateAINotes = async (params) => {
       return response.data;
     }
   } catch (serverError) {
-    console.warn('Backend generation failed or offline. Checking client-side credentials:', serverError.message);
-    
-
+    if (serverError.response?.data?.error === 'OUT_OF_CREDITS') {
+      if (!apiKey) {
+        throw new Error('OUT_OF_CREDITS: You have run out of free notes credits. Please upgrade or provide your own API key in Settings.');
+      }
+    } else {
+      console.warn('Backend generation failed or offline:', serverError.message);
+    }
 
     // Fallback to Mock Data if no client API key is provided
     if (!apiKey) {

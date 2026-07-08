@@ -170,7 +170,7 @@ export default function Settings() {
                   className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-gray-200/20 bg-gray-50/50 dark:bg-gray-900/30 focus:border-[rgb(var(--accent-color))] focus:ring-0 outline-hidden font-mono"
                 />
                 <p className="text-xxs text-gray-500 dark:text-gray-400 mt-1.5 leading-normal">
-                  If left blank, the app runs in **Interactive Demo Mode**, utilizing high-quality cached templates for standard school subjects so you can still study.
+                  If left blank, the app runs using the **Default Free Server AI**. You can override this by entering your own personal API key here if you want faster responses or unlimited generations.
                 </p>
               </div>
               <button
