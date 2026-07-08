@@ -252,7 +252,10 @@ const generateToken = (id) => {
 // GET Configuration settings for client
 app.get('/api/config', (req, res) => {
   res.json({
-    googleClientId: process.env.GOOGLE_CLIENT_ID || null
+    googleClientId: process.env.GOOGLE_CLIENT_ID || null,
+    hasGeminiKey: !!process.env.GEMINI_API_KEY,
+    geminiKeyLength: process.env.GEMINI_API_KEY ? process.env.GEMINI_API_KEY.length : 0,
+    hasOpenAiKey: !!process.env.OPENAI_API_KEY
   });
 });
 
