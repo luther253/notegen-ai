@@ -143,7 +143,8 @@ function LoginPanel({ onSwitch }) {
   useEffect(() => {
     const loadConfig = async () => {
       try {
-        const res = await fetch('/api/config');
+        const API_BASE = import.meta.env.VITE_API_URL || '';
+        const res = await fetch(`${API_BASE}/api/config`);
         const data = await res.json();
         if (data.googleClientId) {
           setGoogleClientId(data.googleClientId);
