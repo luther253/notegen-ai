@@ -11,6 +11,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import rateLimit from 'express-rate-limit';
+import Stripe from 'stripe';
 
 // Models & Middleware
 import User from './models/User.js';
@@ -20,6 +21,9 @@ import { protect } from './middleware/authMiddleware.js';
 
 // Load environment variables
 dotenv.config();
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_placeholder');
+
 
 // Connect to MongoDB
 const mongoURI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/notegen';
@@ -44,6 +48,41 @@ app.use(cors({
   },
   credentials: true
 }));
+
+// Stripe Webhook MUST be placed before express.json() so it can parse the raw body
+app.post('/api/webhook/stripe', express.raw({ type: 'application/json' }), async (req, res) => {
+  const sig = req.headers['stripe-signature'];
+  let event;
+
+  try {
+    event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
+  } catch (err) {
+    console.error('Webhook signature verification failed.', err.message);
+    return res.status(400).send(`Webhook Error: ${err.message}`);
+  }
+
+  // Handle the checkout.session.completed event
+  if (event.type === 'checkout.session.completed') {
+    const session = event.data.object;
+    
+    try {
+      // Find the user by ID passed in client_reference_id
+      const userId = session.client_reference_id;
+      if (userId) {
+        await User.findByIdAndUpdate(userId, {
+          isPremium: true,
+          credits: 9999
+        });
+        console.log(`Successfully upgraded user ${userId} to Premium via Stripe!`);
+      }
+    } catch (err) {
+      console.error('Error upgrading user in webhook:', err);
+    }
+  }
+
+  res.json({ received: true });
+});
+
 app.use(express.json({ limit: '5mb' }));
 app.use(express.urlencoded({ extended: true, limit: '5mb' }));
 
@@ -455,28 +494,6 @@ app.put('/api/auth/profile', protect, async (req, res) => {
   }
 });
 
-// Auth - Upgrade User (Simulated Stripe Upgrade)
-app.post('/api/auth/upgrade', protect, async (req, res) => {
-  try {
-    const user = await User.findById(req.userId);
-    if (!user) {
-      return res.status(404).json({ error: 'User not found.' });
-    }
-
-    user.isPremium = true;
-    user.credits = 9999;
-    await user.save();
-
-    res.json({
-      message: 'Upgrade successful! Welcome to Premium.',
-      credits: user.credits,
-      isPremium: user.isPremium
-    });
-  } catch (error) {
-    console.error('Upgrade failed:', error);
-    res.status(500).json({ error: 'Upgrade failed, please try again.' });
-  }
-});
 
 // AI Chat with Note — answer questions about a given note's content
 app.post('/api/chat-with-note', protect, async (req, res) => {
@@ -1015,6 +1032,46 @@ app.get('/api/status', (req, res) => {
     geminiKeyConfigured: !!process.env.GEMINI_API_KEY,
     openaiKeyConfigured: !!process.env.OPENAI_API_KEY
   });
+});
+
+// Create Stripe Checkout Session
+app.post('/api/create-checkout-session', protect, async (req, res) => {
+  try {
+    const user = await User.findById(req.userId);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      mode: 'subscription',
+      client_reference_id: req.userId,
+      customer_email: user.email,
+      line_items: [
+        {
+          price_data: {
+            currency: 'usd',
+            product_data: {
+              name: 'Notegen AI Premium',
+              description: 'Unlimited AI Study Notes, Flashcards, and Quizzes',
+            },
+            unit_amount: 999, // $9.99
+            recurring: {
+              interval: 'month',
+            },
+          },
+          quantity: 1,
+        },
+      ],
+      success_url: `${process.env.CLIENT_URL || 'http://localhost:5173'}/dashboard/generate?success=true`,
+      cancel_url: `${process.env.CLIENT_URL || 'http://localhost:5173'}/dashboard/generate?canceled=true`,
+    });
+
+    res.json({ url: session.url });
+  } catch (err) {
+    console.error('Stripe session creation failed:', err.message);
+    res.status(500).json({ error: 'Failed to create Stripe checkout session.' });
+  }
 });
 
 app.listen(PORT, () => {

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import axios from 'axios';
 import { 
   FiMic, 
   FiMicOff,
@@ -678,17 +679,32 @@ export default function GenerateNotes() {
                   ))}
                 </div>
 
-                {/* Real Checkout Button Placeholder */}
+                {/* Real Checkout Button */}
                 <button
-                  disabled={true}
-                  className="w-full py-4 text-xs font-bold text-slate-950 bg-gradient-to-r from-amber-400 via-amber-300 to-yellow-400 opacity-75 rounded-xl cursor-not-allowed flex items-center justify-center gap-2"
+                  disabled={isUpgrading}
+                  onClick={async () => {
+                    setIsUpgrading(true);
+                    try {
+                      const response = await axios.post('/api/create-checkout-session');
+                      if (response.data.url) {
+                        window.location.href = response.data.url;
+                      } else {
+                        throw new Error('Failed to create checkout session.');
+                      }
+                    } catch (err) {
+                      console.error('Checkout error:', err);
+                      triggerToast('Failed to connect to Stripe. Is the server configured with Stripe keys?', 'error');
+                      setIsUpgrading(false);
+                    }
+                  }}
+                  className={`w-full py-4 text-xs font-bold text-slate-950 rounded-xl flex items-center justify-center gap-2 transition-all ${
+                    isUpgrading 
+                      ? 'bg-gray-500 cursor-not-allowed' 
+                      : 'bg-gradient-to-r from-amber-400 via-amber-300 to-yellow-400 hover:scale-[1.02] active:scale-95 shadow-[0_0_20px_rgba(251,191,36,0.3)]'
+                  }`}
                 >
-                  Pay with Stripe ($9.99/mo) - Coming Soon
+                  {isUpgrading ? 'Redirecting to secure checkout...' : 'Pay with Stripe ($9.99/mo) 💳'}
                 </button>
-
-                <p className="text-[10px] text-gray-400 mt-2">
-                  (Admin: You need to provide your real Stripe API keys to fully activate this payment gateway!)
-                </p>
 
                 <button
                   onClick={() => setShowUpgradeModal(false)}
