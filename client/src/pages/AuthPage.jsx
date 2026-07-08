@@ -143,7 +143,7 @@ function LoginPanel({ onSwitch }) {
   useEffect(() => {
     const loadConfig = async () => {
       try {
-        const API_BASE = import.meta.env.VITE_API_URL || '';
+        const API_BASE = import.meta.env.VITE_API_URL || 'https://notegen-ai-production.up.railway.app';
         const res = await fetch(`${API_BASE}/api/config`);
         const data = await res.json();
         if (data.googleClientId) {
