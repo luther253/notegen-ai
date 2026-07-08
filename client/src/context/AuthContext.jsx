@@ -166,6 +166,22 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const fetchProfile = async () => {
+    if (!user) return false;
+    try {
+      const response = await axios.get('/api/auth/profile');
+      setUser((prev) => {
+        const updated = { ...prev, ...response.data };
+        localStorage.setItem('notes_auth_user', JSON.stringify(updated));
+        return updated;
+      });
+      return true;
+    } catch (error) {
+      console.error('Fetch profile error:', error);
+      return false;
+    }
+  };
+
   const upgradeUser = async () => {
     if (!user) return false;
     try {
@@ -202,6 +218,7 @@ export const AuthProvider = ({ children }) => {
         loginAsGuest,
         logout,
         updateProfile,
+        fetchProfile,
         upgradeUser,
         updateCreditsRemaining,
       }}

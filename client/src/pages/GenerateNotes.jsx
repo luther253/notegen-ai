@@ -30,7 +30,7 @@ import Toast from '../components/Toast';
 
 export default function GenerateNotes() {
   const { subjects, addSubject, addNote } = useNotes();
-  const { user, upgradeUser, updateCreditsRemaining } = useAuth();
+  const { user, fetchProfile, upgradeUser, updateCreditsRemaining } = useAuth();
   const navigate = useNavigate();
 
   // Settings states
@@ -71,6 +71,16 @@ export default function GenerateNotes() {
 
   // Speech Recognition engine
   const [recognizer, setRecognizer] = useState(null);
+
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('success') === 'true') {
+      triggerToast('Payment successful! Your account has been upgraded.', 'success');
+      fetchProfile();
+      // Clean up URL without refreshing the page
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
 
   useEffect(() => {
     // Stop speaking when leaving the page
