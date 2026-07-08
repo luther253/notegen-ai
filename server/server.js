@@ -255,7 +255,8 @@ app.get('/api/config', (req, res) => {
     googleClientId: process.env.GOOGLE_CLIENT_ID || null,
     hasGeminiKey: !!process.env.GEMINI_API_KEY,
     geminiKeyLength: process.env.GEMINI_API_KEY ? process.env.GEMINI_API_KEY.length : 0,
-    hasOpenAiKey: !!process.env.OPENAI_API_KEY
+    hasOpenAiKey: !!process.env.OPENAI_API_KEY,
+    dbState: mongoose.connection.readyState
   });
 });
 
