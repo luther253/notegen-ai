@@ -256,7 +256,8 @@ app.get('/api/config', (req, res) => {
     hasGeminiKey: !!process.env.GEMINI_API_KEY,
     geminiKeyLength: process.env.GEMINI_API_KEY ? process.env.GEMINI_API_KEY.length : 0,
     hasOpenAiKey: !!process.env.OPENAI_API_KEY,
-    dbState: mongoose.connection.readyState
+    dbState: mongoose.connection.readyState,
+    hasMongoUri: !!process.env.MONGODB_URI
   });
 });
 
