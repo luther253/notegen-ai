@@ -156,79 +156,68 @@ function LoginPanel({ onSwitch }) {
     loadConfig();
   }, []);
 
-  // Load and initialize the Google Identity Services script
+  // Load the Google Identity Services script
   useEffect(() => {
-    if (!googleClientId) return;
-
-    const initGsi = () => {
-      if (!window.google?.accounts?.id) return;
-      window.google.accounts.id.initialize({
-        client_id: googleClientId,
-        callback: async (credentialResponse) => {
-          try {
-            setGoogleLoading(true);
-            // Decode the JWT to get name, email, picture
-            const base64 = credentialResponse.credential.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
-            const payload = JSON.parse(decodeURIComponent(window.atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join('')));
-            await loginAsGuest(payload.email, payload.name, payload.picture);
-            navigate('/dashboard');
-          } catch (err) {
-            setError('Google sign-in failed. Please try again.');
-            setGoogleLoading(false);
-          }
-        },
-        auto_select: false,
-      });
+    if (window.google?.accounts?.oauth2) {
       setIsGsiReady(true);
-    };
-
-    if (window.google?.accounts?.id) {
-      initGsi();
       return;
     }
-
     const script = document.createElement('script');
     script.src = 'https://accounts.google.com/gsi/client';
     script.async = true;
-    script.onload = initGsi;
+    script.onload = () => setIsGsiReady(true);
     document.body.appendChild(script);
-  }, [googleClientId]);
+  }, []);
 
-  // Render the official Google button once GSI is ready
-  useEffect(() => {
-    if (!isGsiReady || !googleBtnRef.current) return;
-    googleBtnRef.current.innerHTML = '';
-    window.google.accounts.id.renderButton(googleBtnRef.current, {
-      theme: 'outline',
-      size: 'large',
-      shape: 'pill',
-      width: googleBtnRef.current.offsetWidth || 320,
-      text: 'continue_with',
-      logo_alignment: 'left',
+  const handleCustomGoogleLogin = () => {
+    if (!googleClientId) {
+      // Fallback popup when no real Google Client ID configured
+      const width = 500;
+      const height = 620;
+      const left = window.screenX + (window.outerWidth - width) / 2;
+      const top = window.screenY + (window.outerHeight - height) / 2;
+      window.open(
+        '/google-signin-mock',
+        'GoogleSignIn',
+        `width=${width},height=${height},left=${left},top=${top},scrollbars=no,resizable=no`
+      );
+      const handleMessage = (event) => {
+        if (event.origin !== window.location.origin) return;
+        if (event.data?.type === 'GOOGLE_SIGNIN_SUCCESS') {
+          const { email: googleEmail, name: googleName, avatar: googleAvatar } = event.data;
+          loginAsGuest(googleEmail, googleName, googleAvatar);
+          window.removeEventListener('message', handleMessage);
+          navigate('/dashboard');
+        }
+      };
+      window.addEventListener('message', handleMessage);
+      return;
+    }
+
+    // Trigger official Google OAuth popup using token client
+    const tokenClient = window.google.accounts.oauth2.initTokenClient({
+      client_id: googleClientId,
+      scope: 'email profile',
+      callback: async (response) => {
+        if (response.error) {
+          setError('Google sign-in failed. Please try again.');
+          return;
+        }
+        try {
+          setGoogleLoading(true);
+          const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+            headers: { Authorization: `Bearer ${response.access_token}` }
+          });
+          const data = await res.json();
+          await loginAsGuest(data.email, data.name, data.picture);
+          navigate('/dashboard');
+        } catch (err) {
+          setError('Failed to fetch Google profile. Please try again.');
+          setGoogleLoading(false);
+        }
+      },
     });
-  }, [isGsiReady]);
-
-  // Fallback: open mock popup when no real Google Client ID configured
-  const handleGooglePopup = () => {
-    const width = 500;
-    const height = 620;
-    const left = window.screenX + (window.outerWidth - width) / 2;
-    const top = window.screenY + (window.outerHeight - height) / 2;
-    window.open(
-      '/google-signin-mock',
-      'GoogleSignIn',
-      `width=${width},height=${height},left=${left},top=${top},scrollbars=no,resizable=no`
-    );
-    const handleMessage = (event) => {
-      if (event.origin !== window.location.origin) return;
-      if (event.data?.type === 'GOOGLE_SIGNIN_SUCCESS') {
-        const { email: googleEmail, name: googleName, avatar: googleAvatar } = event.data;
-        loginAsGuest(googleEmail, googleName, googleAvatar);
-        window.removeEventListener('message', handleMessage);
-        navigate('/dashboard');
-      }
-    };
-    window.addEventListener('message', handleMessage);
+    tokenClient.requestAccessToken();
   };
 
   const handleLogin = async (e) => {
@@ -322,16 +311,13 @@ function LoginPanel({ onSwitch }) {
           <span className="h-4 w-4 rounded-full border-2 border-white/20 border-t-white animate-spin" />
           Signing in with Google...
         </div>
-      ) : googleClientId && isGsiReady ? (
-        /* Real Google button — rendered directly on the page, shows all browser accounts */
-        <div ref={googleBtnRef} className="w-full flex justify-center min-h-[44px]" />
       ) : (
-        /* Fallback popup when no Client ID is configured */
         <button
-          onClick={handleGooglePopup}
-          className="w-full py-3 rounded-xl text-sm font-semibold text-gray-300 border border-white/10 hover:border-white/20 hover:bg-white/5 transition-all cursor-pointer flex items-center justify-center gap-2"
+          onClick={handleCustomGoogleLogin}
+          type="button"
+          className="w-full py-3 rounded-xl text-sm font-bold text-gray-300 bg-white/[0.04] border border-white/10 hover:bg-white/[0.08] hover:text-white transition-all cursor-pointer flex items-center justify-center gap-3 shadow-sm"
         >
-          <FcGoogle className="text-lg" /> Continue with Google
+          <FcGoogle className="text-xl" /> Continue with Google
         </button>
       )}
 
