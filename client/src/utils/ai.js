@@ -64,17 +64,8 @@ export const generateAINotes = async (params) => {
       }
     } else {
       console.warn('Backend generation failed or offline:', serverError.message);
-    }
-
-    // Fallback to Mock Data if no client API key is provided
-    if (!apiKey) {
-      if (file) {
-        throw new Error('PDF Note Generation is only supported when the backend server is online and configured.');
-      }
-      console.warn('No client API key. Using high-quality local mock generator.');
-      // Simulating delay for realistic UI/UX
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-      return generateMockNote(subject, topic, difficulty, length, style, language, extra);
+      // FORCE ERROR TO UI FOR DEBUGGING
+      throw new Error(`Backend Error: ${serverError.response?.data?.error || serverError.message || 'Unknown Server Error'}`);
     }
 
     if (file) {
