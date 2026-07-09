@@ -74,13 +74,14 @@ const parseJSONResponse = (text) => {
   }
 };
 
-async function fetchWithRetry(url, data, config, maxRetries = 3) {
+async function fetchWithRetry(url, data, config, maxRetries = 4) {
   for (let i = 0; i < maxRetries; i++) {
     try {
       return await axios.post(url, data, config);
     } catch (error) {
       if (error.response?.status === 429 && i < maxRetries - 1) {
-        const delay = Math.pow(2, i) * 1000 + Math.random() * 1000;
+        // Start with an 8 second delay because Google's retryDelay is often ~7s
+        const delay = Math.pow(2, i) * 8000 + Math.random() * 2000;
         console.warn(`[429 Rate Limit] Retrying in ${Math.round(delay)}ms...`);
         await new Promise(r => setTimeout(r, delay));
       } else {
