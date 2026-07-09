@@ -58,15 +58,9 @@ export const generateAINotes = async (params) => {
       return response.data;
     }
   } catch (serverError) {
-    if (serverError.response?.data?.error === 'OUT_OF_CREDITS') {
-      if (!apiKey) {
-        throw new Error('OUT_OF_CREDITS: You have run out of free notes credits. Please upgrade or provide your own API key in Settings.');
-      }
-    } else {
-      console.warn('Backend generation failed or offline:', serverError.message);
-      // FORCE ERROR TO UI FOR DEBUGGING
-      throw new Error(`Backend Error: ${serverError.response?.data?.error || serverError.message || 'Unknown Server Error'}`);
-    }
+    console.warn('Backend generation failed or offline:', serverError.message);
+    // FORCE ERROR TO UI FOR DEBUGGING
+    throw new Error(`Backend Error: ${serverError.response?.data?.error || serverError.message || 'Unknown Server Error'}`);
 
     if (file) {
       throw new Error('PDF Note Generation is only supported via the backend server.');

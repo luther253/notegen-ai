@@ -182,32 +182,6 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const upgradeUser = async () => {
-    if (!user) return false;
-    try {
-      const response = await axios.post('/api/auth/upgrade');
-      const { credits, isPremium } = response.data;
-      setUser((prev) => {
-        if (!prev) return null;
-        const updated = { ...prev, credits, isPremium };
-        localStorage.setItem('notes_auth_user', JSON.stringify(updated));
-        return updated;
-      });
-      return true;
-    } catch (error) {
-      console.error('Upgrade request failed:', error);
-      return false;
-    }
-  };
-
-  const updateCreditsRemaining = (creditsRemaining) => {
-    setUser((prev) => {
-      if (!prev) return null;
-      const updated = { ...prev, credits: creditsRemaining };
-      localStorage.setItem('notes_auth_user', JSON.stringify(updated));
-      return updated;
-    });
-  };
 
   return (
     <AuthContext.Provider
@@ -218,9 +192,7 @@ export const AuthProvider = ({ children }) => {
         loginAsGuest,
         logout,
         updateProfile,
-        fetchProfile,
-        upgradeUser,
-        updateCreditsRemaining,
+        fetchProfile
       }}
     >
       {children}

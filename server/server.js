@@ -44,46 +44,6 @@ app.use(cors({
   credentials: true
 }));
 
-// Lemon Squeezy Webhook MUST be placed before express.json() so it can parse the raw body
-app.post('/api/webhook/lemonsqueezy', express.raw({ type: 'application/json' }), async (req, res) => {
-  try {
-    const secret = process.env.LEMON_SQUEEZY_WEBHOOK_SECRET;
-    if (!secret) {
-      console.error('LEMON_SQUEEZY_WEBHOOK_SECRET is not set.');
-      return res.status(500).send('Webhook secret not configured.');
-    }
-
-    const hmac = crypto.createHmac('sha256', secret);
-    const digest = Buffer.from(hmac.update(req.body).digest('hex'), 'utf8');
-    const signature = Buffer.from(req.get('X-Signature') || '', 'utf8');
-
-    if (!crypto.timingSafeEqual(digest, signature)) {
-      console.error('Invalid signature.');
-      return res.status(400).send('Invalid signature.');
-    }
-
-    const payload = JSON.parse(req.body.toString());
-    const eventName = payload.meta.event_name;
-
-    if (eventName === 'order_created' || eventName === 'subscription_created') {
-      const customData = payload.meta.custom_data;
-      if (customData && customData.user_id) {
-        const userId = customData.user_id;
-        await User.findByIdAndUpdate(userId, {
-          isPremium: true,
-          credits: 9999
-        });
-        console.log(`Successfully upgraded user ${userId} to Premium via Lemon Squeezy!`);
-      }
-    }
-
-    res.json({ received: true });
-  } catch (err) {
-    console.error('Webhook error:', err.message);
-    res.status(500).send(`Webhook Error: ${err.message}`);
-  }
-});
-
 app.use(express.json({ limit: '5mb' }));
 app.use(express.urlencoded({ extended: true, limit: '5mb' }));
 
@@ -546,9 +506,7 @@ app.post('/api/generate', protect, async (req, res) => {
       return res.status(404).json({ error: 'User account not found.' });
     }
 
-    if (!user.isPremium && user.credits <= 0) {
-      return res.status(403).json({ error: 'OUT_OF_CREDITS', message: 'You have run out of free notes credits. Please upgrade to Premium.' });
-    }
+
 
     const prompt = `You are a professional academic AI Notes Generator.
 Generate high-quality, comprehensive, and clear student study notes for:
@@ -582,17 +540,13 @@ Make the explanation clear, highly professional, and easy to study. Write everyt
     const flashcardsData = await generateFlashcards(noteContent, apiKey, apiProvider);
     const quizData = await generateQuiz(noteContent, apiKey, apiProvider);
 
-    if (!user.isPremium) {
-      user.credits = Math.max(0, user.credits - 1);
-      await user.save();
-    }
+
 
     res.json({
       title: `${topic} (${subject || 'General'})`,
       content: noteContent,
       flashcards: flashcardsData.flashcards || flashcardsData,
-      quiz: quizData.quiz || quizData,
-      creditsRemaining: user.credits
+      quiz: quizData.quiz || quizData
     });
   } catch (error) {
     console.error('Error generating notes:', error);
@@ -691,9 +645,7 @@ app.post('/api/generate-pdf', protect, upload.single('file'), async (req, res) =
       return res.status(404).json({ error: 'User account not found.' });
     }
 
-    if (!user.isPremium && user.credits <= 0) {
-      return res.status(403).json({ error: 'OUT_OF_CREDITS', message: 'You have run out of free notes credits. Please upgrade to Premium.' });
-    }
+
 
     // Extract text content from the uploaded PDF
     const pdfData = await pdfParse(req.file.buffer);
@@ -710,13 +662,8 @@ app.post('/api/generate-pdf', protect, upload.single('file'), async (req, res) =
       console.log('No API key provided. Returning dynamic mock parsed notes from PDF.');
       const mockNote = generateMockPDFNote(pdfText, req.file.originalname, subject, difficulty);
       
-      if (!user.isPremium) {
-        user.credits = Math.max(0, user.credits - 1);
-        await user.save();
-      }
       return res.json({
-        ...mockNote,
-        creditsRemaining: user.credits
+        ...mockNote
       });
     }
 
@@ -768,17 +715,13 @@ Make the explanation clear, highly professional, and easy to study. Write everyt
     // Extract a title from the PDF or content
     const firstLine = pdfData.info?.Title || 'Extracted PDF Note';
 
-    if (!user.isPremium) {
-      user.credits = Math.max(0, user.credits - 1);
-      await user.save();
-    }
+
 
     res.json({
       title: firstLine.length < 50 ? `${firstLine} (${subject || 'PDF'})` : `Study Notes (${subject || 'PDF'})`,
       content: noteContent,
       flashcards: flashcardsData.flashcards || flashcardsData,
-      quiz: quizData.quiz || quizData,
-      creditsRemaining: user.credits
+      quiz: quizData.quiz || quizData
     });
   } catch (error) {
     console.error('Error generating notes from PDF:', error);
@@ -1033,31 +976,6 @@ app.get('/api/status', (req, res) => {
     geminiKeyConfigured: !!process.env.GEMINI_API_KEY,
     openaiKeyConfigured: !!process.env.OPENAI_API_KEY
   });
-});
-
-// Create Lemon Squeezy Checkout Session (URL generation)
-app.post('/api/create-checkout-session', protect, async (req, res) => {
-  try {
-    const user = await User.findById(req.userId);
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    const storeUrl = process.env.LEMON_SQUEEZY_STORE_URL;
-    if (!storeUrl) {
-      return res.status(500).json({ error: 'LEMON_SQUEEZY_STORE_URL not configured on server.' });
-    }
-
-    // Append custom data to URL
-    const checkoutUrl = new URL(storeUrl);
-    checkoutUrl.searchParams.append('checkout[custom][user_id]', req.userId);
-    checkoutUrl.searchParams.append('checkout[email]', user.email);
-
-    res.json({ url: checkoutUrl.toString() });
-  } catch (err) {
-    console.error('Lemon Squeezy session creation failed:', err.message);
-    res.status(500).json({ error: 'Failed to create Lemon Squeezy checkout session.' });
-  }
 });
 
 app.listen(PORT, () => {

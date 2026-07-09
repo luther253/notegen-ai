@@ -60,7 +60,6 @@ export default function GenerateNotes() {
   const [toastType, setToastType] = useState('success');
 
   // SaaS Upgrade states
-  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [isUpgrading, setIsUpgrading] = useState(false);
 
   const triggerToast = (msg, type = 'success') => {
@@ -147,11 +146,7 @@ export default function GenerateNotes() {
       return;
     }
 
-    if (user && !user.isPremium && user.credits <= 0) {
-      setShowUpgradeModal(true);
-      triggerToast('You have run out of free notes credits. Please upgrade!', 'error');
-      return;
-    }
+
 
     setIsGenerating(true);
     setGeneratedNote(null);
@@ -210,21 +205,13 @@ export default function GenerateNotes() {
         quiz: result.quiz || [],
       });
 
-      if (result.creditsRemaining !== undefined) {
-        updateCreditsRemaining(result.creditsRemaining);
-      }
 
       setGeneratedNote(savedNote);
       triggerToast('Student notes generated and saved to My Notes!');
     } catch (err) {
       clearInterval(stepTimer);
       console.error(err);
-      if (err.response?.status === 403 || err.message?.includes('OUT_OF_CREDITS')) {
-        setShowUpgradeModal(true);
-        triggerToast('No credits remaining. Upgrade to Premium to continue!', 'error');
-      } else {
         triggerToast(err.message || 'Notes generation failed.', 'error');
-      }
     } finally {
       setIsGenerating(false);
     }
@@ -272,15 +259,7 @@ export default function GenerateNotes() {
           </h1>
           <div className="flex flex-col sm:flex-row sm:items-center gap-2 mt-1.5">
             <p className="text-xs md:text-sm text-gray-500">Specify parameters to synthesize clean, well-formatted student revision guides.</p>
-            {user && (
-              <span className={`w-fit px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wide ${
-                user.isPremium 
-                  ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20' 
-                  : 'bg-violet-500/10 text-[rgb(var(--accent-color))] border border-violet-500/20'
-              }`}>
-                {user.isPremium ? 'Premium (Unlimited)' : `${user.credits} Free Credits Remaining`}
-              </span>
-            )}
+
           </div>
         </div>
       </div>
@@ -639,88 +618,6 @@ export default function GenerateNotes() {
 
       </AnimatePresence>
 
-      {/* SaaS Premium Upgrade Modal */}
-      <AnimatePresence>
-        {showUpgradeModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            {/* Backdrop */}
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setShowUpgradeModal(false)}
-              className="absolute inset-0 bg-slate-955/80 backdrop-blur-sm"
-            />
-            
-            {/* Modal Box */}
-            <motion.div
-              initial={{ scale: 0.9, y: 20, opacity: 0 }}
-              animate={{ scale: 1, y: 0, opacity: 1 }}
-              exit={{ scale: 0.9, y: 20, opacity: 0 }}
-              className="glass-panel border border-white/10 w-full max-w-md p-6 sm:p-8 rounded-3xl relative z-10 text-left bg-gradient-to-b from-slate-900 via-slate-900 to-black text-white shadow-2xl"
-            >
-              <div className="text-center space-y-4">
-                {/* Premium Badge */}
-                <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-400 flex items-center justify-center mx-auto text-2xl shadow-inner animate-pulse-slow">
-                  <FiAward />
-                </div>
-                
-                <h3 className="font-display font-extrabold text-xl sm:text-2xl tracking-tight">Upgrade to Premium 👑</h3>
-                <p className="text-xs text-gray-400">You have exhausted your free trial notes. Unlock full access to continue your academic success.</p>
-                
-                {/* Features List */}
-                <div className="py-4 space-y-3 text-left">
-                  {[
-                    'Unlimited study guides and revisions notes',
-                    'Scan unlimited PDF documents and slides',
-                    'Access full custom flashcards and test quizzes',
-                    'Interactive dashboard metrics tracking',
-                  ].map((feat, i) => (
-                    <div key={i} className="flex items-center gap-3 text-xxs font-semibold text-gray-300">
-                      <div className="w-4 h-4 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold text-[8px]">✓</div>
-                      <span>{feat}</span>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Real Checkout Button */}
-                <button
-                  disabled={isUpgrading}
-                  onClick={async () => {
-                    setIsUpgrading(true);
-                    try {
-                      const response = await axios.post('/api/create-checkout-session');
-                      if (response.data.url) {
-                        window.location.href = response.data.url;
-                      } else {
-                        throw new Error('Failed to create checkout session.');
-                      }
-                    } catch (err) {
-                      console.error('Checkout error:', err);
-                      triggerToast('Failed to connect to checkout. Is the server configured correctly?', 'error');
-                      setIsUpgrading(false);
-                    }
-                  }}
-                  className={`w-full py-4 text-xs font-bold text-slate-950 rounded-xl flex items-center justify-center gap-2 transition-all ${
-                    isUpgrading 
-                      ? 'bg-gray-500 cursor-not-allowed' 
-                      : 'bg-gradient-to-r from-amber-400 via-amber-300 to-yellow-400 hover:scale-[1.02] active:scale-95 shadow-[0_0_20px_rgba(251,191,36,0.3)]'
-                  }`}
-                >
-                  {isUpgrading ? 'Redirecting to secure checkout...' : 'Upgrade to Premium (Secure Checkout) 💳'}
-                </button>
-
-                <button
-                  onClick={() => setShowUpgradeModal(false)}
-                  className="w-full text-xxs text-gray-500 hover:text-gray-300 transition-colors py-1 cursor-pointer font-bold uppercase tracking-wider"
-                >
-                  Maybe Later
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
 
       {/* Floating alerts */}
       <Toast
