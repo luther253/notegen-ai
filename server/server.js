@@ -147,7 +147,7 @@ async function generateContent({
     // Google Gemini API
     if (isJson) {
       const response = await fetchWithRetry(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${key}`,
         {
           contents: [{ parts: [{ text: activePrompt }] }],
           generationConfig: {
@@ -160,7 +160,7 @@ async function generateContent({
       return parseJSONResponse(content);
     } else {
       const response = await fetchWithRetry(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${key}`,
         {
           contents: [{ parts: [{ text: activePrompt }] }]
         },
@@ -287,7 +287,7 @@ app.get('/api/config', async (req, res) => {
   if (process.env.GEMINI_API_KEY) {
     try {
       const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-      const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+      const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
       await model.generateContent('Say hello');
       geminiStatus = 'ok';
     } catch (e) {
