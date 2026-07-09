@@ -550,7 +550,11 @@ Make the explanation clear, highly professional, and easy to study. Write everyt
     });
   } catch (error) {
     console.error('Error generating notes:', error);
-    res.status(500).json({ error: error.message || 'Notes generation failed.' });
+    res.status(500).json({ 
+      error: error.message || 'Notes generation failed.',
+      url: error.config ? error.config.url : undefined,
+      axiosData: error.response ? error.response.data : undefined
+    });
   }
 });
 
