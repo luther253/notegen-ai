@@ -45,7 +45,7 @@ async function askAI(noteContent, question, apiKey, apiProvider) {
   } else {
     // Gemini (direct browser request without any Authorization header)
     const res = await externalApi.post(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
       {
         contents: [
           { parts: [{ text: SYSTEM_PROMPT(noteContent) + '\n\nStudent question: ' + question }] }

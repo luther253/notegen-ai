@@ -155,7 +155,7 @@ async function generateContent({
     // Google Gemini API
     if (isJson) {
       const response = await axios.post(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`,
         {
           contents: [{ parts: [{ text: activePrompt }] }],
           generationConfig: {
@@ -168,7 +168,7 @@ async function generateContent({
       return parseJSONResponse(content);
     } else {
       const response = await axios.post(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`,
         {
           contents: [{ parts: [{ text: activePrompt }] }]
         },
