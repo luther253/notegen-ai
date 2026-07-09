@@ -21,7 +21,7 @@ import {
 } from 'react-icons/fi';
 import { useNotes } from '../context/NotesContext';
 import MarkdownRenderer from '../components/MarkdownRenderer';
-import { downloadAsTXT, downloadAsPDF, printNoteToPDF } from '../utils/pdfGenerator';
+import { downloadAsPDF, printNoteToPDF } from '../utils/pdfGenerator';
 import Toast from '../components/Toast';
 import NoteChat from '../components/NoteChat';
 

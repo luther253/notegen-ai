@@ -21,7 +21,7 @@ import { HiSparkles } from 'react-icons/hi';
 import { useNotes } from '../context/NotesContext';
 import { useAuth } from '../context/AuthContext';
 import { generateAINotes } from '../utils/ai';
-import { downloadAsTXT, downloadAsPDF, printNoteToPDF } from '../utils/pdfGenerator';
+import { downloadAsPDF, printNoteToPDF } from '../utils/pdfGenerator';
 import { speakText, stopSpeaking, isSpeaking } from '../services/voice';
 import { createSpeechRecognizer } from '../services/voice';
 import MarkdownRenderer from '../components/MarkdownRenderer';
@@ -601,13 +601,7 @@ export default function GenerateNotes() {
                     <FiDownload /> Download as PDF (.pdf)
                   </button>
 
-                  {/* Download raw TXT files */}
-                  <button
-                    onClick={() => downloadAsTXT(generatedNote)}
-                    className="flex items-center gap-2.5 w-full text-xs font-semibold px-4 py-3 rounded-xl border border-gray-200/20 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer"
-                  >
-                    <FiDownload /> Download Plain Text (.txt)
-                  </button>
+
                 </div>
               </div>
 
