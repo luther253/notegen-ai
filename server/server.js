@@ -74,6 +74,22 @@ const parseJSONResponse = (text) => {
   }
 };
 
+async function fetchWithRetry(url, data, config, maxRetries = 3) {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      return await axios.post(url, data, config);
+    } catch (error) {
+      if (error.response?.status === 429 && i < maxRetries - 1) {
+        const delay = Math.pow(2, i) * 1000 + Math.random() * 1000;
+        console.warn(`[429 Rate Limit] Retrying in ${Math.round(delay)}ms...`);
+        await new Promise(r => setTimeout(r, delay));
+      } else {
+        throw error;
+      }
+    }
+  }
+}
+
 // Main Note Generation logic (using Gemini or OpenAI API)
 async function generateContent({
   prompt,
@@ -92,7 +108,7 @@ async function generateContent({
   const activePrompt = prompt || jsonPrompt;
 
   if (provider === 'openai') {
-    const response = await axios.post(
+    const response = await fetchWithRetry(
       'https://api.openai.com/v1/chat/completions',
       {
         model: 'gpt-4o-mini',
@@ -115,7 +131,7 @@ async function generateContent({
   } else {
     // Google Gemini API
     if (isJson) {
-      const response = await axios.post(
+      const response = await fetchWithRetry(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`,
         {
           contents: [{ parts: [{ text: activePrompt }] }],
@@ -128,7 +144,7 @@ async function generateContent({
       const content = response.data.candidates[0].content.parts[0].text;
       return parseJSONResponse(content);
     } else {
-      const response = await axios.post(
+      const response = await fetchWithRetry(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`,
         {
           contents: [{ parts: [{ text: activePrompt }] }]
