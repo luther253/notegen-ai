@@ -11,6 +11,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import rateLimit from 'express-rate-limit';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 // Models & Middleware
 import User from './models/User.js';
 import Note from './models/Note.js';
@@ -88,7 +89,7 @@ async function generateContent({
     throw new Error(`No API key provided. Please configure a server-side ${provider.toUpperCase()}_API_KEY or provide a client-side API Key in Settings.`);
   }
 
-  const activePrompt = isJson ? jsonPrompt : prompt;
+  const activePrompt = prompt || jsonPrompt;
 
   if (provider === 'openai') {
     const response = await axios.post(
@@ -115,7 +116,7 @@ async function generateContent({
     // Google Gemini API
     if (isJson) {
       const response = await axios.post(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`,
         {
           contents: [{ parts: [{ text: activePrompt }] }],
           generationConfig: {
@@ -128,7 +129,7 @@ async function generateContent({
       return parseJSONResponse(content);
     } else {
       const response = await axios.post(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`,
         {
           contents: [{ parts: [{ text: activePrompt }] }]
         },
@@ -255,7 +256,7 @@ app.get('/api/config', async (req, res) => {
   if (process.env.GEMINI_API_KEY) {
     try {
       const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+      const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
       await model.generateContent('Say hello');
       geminiStatus = 'ok';
     } catch (e) {
