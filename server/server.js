@@ -971,8 +971,9 @@ app.post('/api/quizzes', protect, async (req, res) => {
 
 // Port check endpoint
 app.get('/api/status', (req, res) => {
-  res.json({
-    status: 'online',
+  res.json({ 
+    status: 'online', 
+    version: '1.0.1',
     geminiKeyConfigured: !!process.env.GEMINI_API_KEY,
     openaiKeyConfigured: !!process.env.OPENAI_API_KEY
   });
