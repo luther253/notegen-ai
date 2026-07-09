@@ -697,7 +697,7 @@ export default function GenerateNotes() {
                       }
                     } catch (err) {
                       console.error('Checkout error:', err);
-                      triggerToast('Failed to connect to Stripe. Is the server configured with Stripe keys?', 'error');
+                      triggerToast('Failed to connect to checkout. Is the server configured correctly?', 'error');
                       setIsUpgrading(false);
                     }
                   }}
@@ -707,7 +707,7 @@ export default function GenerateNotes() {
                       : 'bg-gradient-to-r from-amber-400 via-amber-300 to-yellow-400 hover:scale-[1.02] active:scale-95 shadow-[0_0_20px_rgba(251,191,36,0.3)]'
                   }`}
                 >
-                  {isUpgrading ? 'Redirecting to secure checkout...' : 'Pay with Stripe ($9.99/mo) 💳'}
+                  {isUpgrading ? 'Redirecting to secure checkout...' : 'Upgrade to Premium (Secure Checkout) 💳'}
                 </button>
 
                 <button
