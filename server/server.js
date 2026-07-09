@@ -80,8 +80,22 @@ async function fetchWithRetry(url, data, config, maxRetries = 4) {
       return await axios.post(url, data, config);
     } catch (error) {
       if (error.response?.status === 429 && i < maxRetries - 1) {
-        // Start with an 8 second delay because Google's retryDelay is often ~7s
-        const delay = Math.pow(2, i) * 8000 + Math.random() * 2000;
+        let delay = Math.pow(2, i) * 8000 + Math.random() * 2000;
+        
+        // Parse Google's exact retryDelay if provided
+        try {
+          const details = error.response.data?.error?.details || [];
+          const retryInfo = details.find(d => d['@type'] === 'type.googleapis.com/google.rpc.RetryInfo');
+          if (retryInfo && retryInfo.retryDelay) {
+            const parsedSeconds = parseFloat(retryInfo.retryDelay.replace('s', ''));
+            if (!isNaN(parsedSeconds)) {
+              delay = (parsedSeconds * 1000) + 2000; // Exact time + 2s buffer
+            }
+          }
+        } catch(e) {
+          console.error('Failed to parse retryDelay', e.message);
+        }
+
         console.warn(`[429 Rate Limit] Retrying in ${Math.round(delay)}ms...`);
         await new Promise(r => setTimeout(r, delay));
       } else {
